@@ -2,7 +2,8 @@
 # C2 port devices
 #
 
-menuconfig C2PORT
+menu C2PORT
+config C2PORT_CORE
 	tristate "Silicon Labs C2 port support"
 	default n
 	help
@@ -18,17 +19,15 @@ menuconfig C2PORT
 
 	  If you are not sure, say N here.
 
-if C2PORT
 
-config C2PORT_DURAMAR_2150
-	tristate "C2 port support for Eurotech's Duramar 2150"
-	depends on X86
+config C2PORT_GPIO
+	tristate "C2 port support generic GPIO"
+	depends on GPIO_SYSFS
 	default n
 	help
-	  This option enables C2 support for the Eurotech's Duramar 2150
-	  on board micro controller.
+	  This option enables C2 support for the c2port on a generic
+	  gpio interface, using 'bit-banging'.
 
 	  To compile this driver as a module, choose M here: the module will
-	  be called c2port-duramar2150.
-
-endif # C2PORT
+	  be called c2port-gpio.
+endmenu

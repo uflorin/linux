@@ -1,3 +1,2 @@
-obj-$(CONFIG_C2PORT)		+= core.o
-
-obj-$(CONFIG_C2PORT_DURAMAR_2150)	+= c2port-duramar2150.o
+obj-$(CONFIG_C2PORT_CORE) += c2port-core.o
+obj-${CONFIG_C2PORT_GPIO} += c2port-gpio.o
