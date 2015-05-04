@@ -19,11 +19,8 @@
 #include <linux/module.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
+#include <asm/io.h>
+#include <mach/platform.h>
 
 #include <linux/c2port.h>
 
@@ -35,11 +32,8 @@ MODULE_PARM_DESC(c2ck, "C2CK pin");
 module_param(c2d, int, S_IRUSR);
 MODULE_PARM_DESC(c2d, "C2D pin");
 
-int  mem_fd;
-void *gpio_map;
-
 // I/O access
-volatile unsigned *gpio;
+volatile unsigned *gpio=(volatile unsigned *)__io_address(GPIO_BASE);
 
 
 // GPIO setup macros. Always use INP_GPIO(x) before using OUT_GPIO(x) or SET_GPIO_ALT(x,y)
@@ -57,40 +51,6 @@ volatile unsigned *gpio;
 #define GPIO_C2D_PORT           23
 #define GPIO_C2CKSTB_PORT       24
 #define GPIO_C2CK_PORT          24
-
-//
-// Set up a memory regions to access GPIO
-//
-void setup_io()
-{
-	/* open /dev/mem */
-	if ((mem_fd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
-		printf("can't open /dev/mem \n");
-		exit(-1);
-	}
-
-	/* mmap GPIO */
-	gpio_map = mmap(
-		NULL,             //Any adddress in our space will do
-		BLOCK_SIZE,       //Map length
-		PROT_READ | PROT_WRITE,// Enable reading & writting to mapped memory
-		MAP_SHARED,       //Shared with other processes
-		mem_fd,           //File to map
-		GPIO_BASE         //Offset to GPIO peripheral
-		);
-
-	close(mem_fd); //No need to keep mem_fd open after mmap
-
-	if (gpio_map == MAP_FAILED) {
-		printf("mmap error %d\n", (int)gpio_map);//errno also set!
-		exit(-1);
-	}
-
-	// Always use volatile pointer!
-	gpio = (volatile unsigned *)gpio_map;
-
-
-} // setup_io
 
 
 
@@ -119,45 +79,47 @@ static void gpio_c2port_c2d_dir(struct c2port_device *dev, int dir)
 
 static int gpio_c2port_c2d_get(struct c2port_device *dev)
 {
-//	return gpio_get_value(c2d);
-	int gpioval;
-	gpioval = GET_GPIO(GPIO_C2D_PORT);
+	return gpio_get_value(c2d);
 
-	//printf("%d\n", gpioval);
+//	int gpioval;
+//	gpioval = GET_GPIO(GPIO_C2D_PORT);
 
-	return gpioval != 0;
+////	printk("gpio_c2port_c2d_get %d\n", gpioval);
+
+//	return gpioval != 0;
 }
 
 static void gpio_c2port_c2d_set(struct c2port_device *dev, int status)
 {
-//	gpio_set_value(c2d, status);
-	if (status)
-	{
-		GPIO_SET = 1 << GPIO_C2D_PORT;
-		INP_GPIO(GPIO_C2D_PORT);
-		OUT_GPIO(GPIO_C2D_PORT);
-	}
-	else
-		GPIO_CLR = 1 << GPIO_C2D_PORT;
+	gpio_set_value(c2d, status);
+
+//		INP_GPIO(GPIO_C2D_PORT);
+//		OUT_GPIO(GPIO_C2D_PORT);
+//	if (status)
+//	{
+//		GPIO_SET = 1 << GPIO_C2D_PORT;
+//	}
+//	else
+//		GPIO_CLR = 1 << GPIO_C2D_PORT;
 }
 
 static void gpio_c2port_c2ck_set(struct c2port_device *dev, int status)
 {
-//	gpio_set_value(c2ck, status);
-	if (status)
-	{
-		INP_GPIO(GPIO_C2CK_PORT);
-		OUT_GPIO(GPIO_C2CK_PORT);
+	gpio_set_value(c2ck, status);
+//		INP_GPIO(GPIO_C2CK_PORT);
+//		OUT_GPIO(GPIO_C2CK_PORT);
 
-		GPIO_SET = 1 << GPIO_C2CK_PORT;
-	}
-	else
-		GPIO_CLR = 1 << GPIO_C2CK_PORT;
+//	if (status)
+//	{
+//		GPIO_SET = 1 << GPIO_C2CK_PORT;
+//	}
+//	else
+//		GPIO_CLR = 1 << GPIO_C2CK_PORT;
 }
 
 static struct c2port_ops gpio_c2port_ops = {
 	block_size	:512,		/* bytes */
-	blocks_num	:30,		/* total flash size: 15360 bytes */
+	blocks_num	:31,		/* total flash size: 15360 bytes */
 	access		:gpio_c2port_access,
 	c2d_dir		:gpio_c2port_c2d_dir,
 	c2d_get		:gpio_c2port_c2d_get,
@@ -186,8 +148,6 @@ static int __init gpio_c2port_init(void)
 	gpio_c2port_dev = c2port_device_register("uc", &gpio_c2port_ops, NULL);
 	if (!gpio_c2port_dev)
 		return -ENODEV;
-
-	setup_io();
 
 	return 0;
 

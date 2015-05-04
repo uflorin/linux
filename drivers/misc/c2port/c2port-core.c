@@ -562,21 +562,34 @@ static ssize_t __c2port_write_flash_erase(struct c2port_device *dev)
 	/* Wait for input acknowledge */
 	ret = c2port_poll_in_busy(dev);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_poll_in_busy");
 		return ret;
+	}
 
 	/* Should check status before starting FLASH access sequence */
 
 	/* Wait for status information */
 	ret = c2port_poll_out_ready(dev);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_poll_out_ready");
 		return ret;
+	}
 
 	/* Read flash programming interface status */
 	ret = c2port_read_dr(dev, &status);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_read_dr");
 		return ret;
+	}
+
 	if (status != C2PORT_COMMAND_OK)
+	{
+	    printk("c2port C2PORT_COMMAND_OK");
 		return -EBUSY;
+	}
 
 	/* Send a three-byte arming sequence to enable the device erase.
 	 * If the sequence is not received correctly, the command will be
@@ -586,19 +599,33 @@ static ssize_t __c2port_write_flash_erase(struct c2port_device *dev)
 	c2port_write_dr(dev, 0xde);
 	ret = c2port_poll_in_busy(dev);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_poll_in_busy 0xde");
 		return ret;
+	}
+
 	c2port_write_dr(dev, 0xad);
 	ret = c2port_poll_in_busy(dev);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_poll_in_busy 0xad");
 		return ret;
+	}
+
 	c2port_write_dr(dev, 0xa5);
 	ret = c2port_poll_in_busy(dev);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_poll_in_busy 0xa5");
 		return ret;
+	}
 
 	ret = c2port_poll_out_ready(dev);
 	if (ret < 0)
+	{
+	    printk("c2port c2port_poll_out_ready 2");
 		return ret;
+	}
 
 	return 0;
 }
